@@ -13,41 +13,67 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4
+    - uses: actions/checkout@v4
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.12'
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.12'
 
-      - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          pip install cloudscraper beautifulsoup4
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install cloudscraper beautifulsoup4
 
-      - name: Run apkpure.py
-        run: python apkpure.py
+    - name: Run apkpure.py
+      run: |
+        echo "=== 开始运行数据抓取脚本 ==="
+        python apkpure.py
 
-      - name: Read latest version
-        id: version
-        run: echo "version=$(cat latest)" >> "$GITHUB_OUTPUT"
+    - name: list files & show contents
+      run: |
+        echo "------- 工作目录文件列表 -------"
+        ls -al
+        echo "------- cache.json -------"
+        [ -f cache.json ] && cat cache.json || echo "cache.json NOT FOUND"
+        echo "------- latest -------"
+        [ -f latest ] && cat latest || echo "latest NOT FOUND"
+        echo "------- 结束 -------"
 
-      - name: Check release existence
-        id: check
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          if gh release view "${{ steps.version.outputs.version }}" >/dev/null 2>&1; then
-            echo "exists=true" >> "$GITHUB_OUTPUT"
-          else
-            echo "exists=false" >> "$GITHUB_OUTPUT"
-          fi
+    - name: Read latest version
+      id: version
+      run: |
+        if [ ! -f latest ]; then
+          echo "::error ::latest 文件不存在，无法继续"
+          exit 1
+        fi
+        version=$(cat latest | tr -d '\n\r')
+        if [ -z "$version" ]; then
+          echo "::error ::latest 文件为空"
+          exit 1
+        fi
+        echo "Version: $version"
+        echo "version=$version" >> "$GITHUB_OUTPUT"
 
-      - name: Create GitHub release
-        if: steps.check.outputs.exists == 'false'
-        uses: softprops/action-gh-release@v2
-        with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: HoYoLAB ${{ steps.version.outputs.version }}
-          body: Automated release of HoYoLAB version ${{ steps.version.outputs.version }}.
-          files: hoyolab.xapk
+    - name: Check release existence
+      id: check
+      env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+      run: |
+        version="${{ steps.version.outputs.version }}"
+        echo "检查是否已经发布 tag=$version 的 Release..."
+        if gh release view "$version" >/dev/null 2>&1; then
+          echo "exists=true" >> "$GITHUB_OUTPUT"
+          echo "Release 版本号已存在"
+        else
+          echo "exists=false" >> "$GITHUB_OUTPUT"
+          echo "Release 尚未发布"
+        fi
+
+    - name: Create GitHub release
+      if: steps.check.outputs.exists == 'false'
+      uses: softprops/action-gh-release@v2
+      with:
+        tag_name: ${{ steps.version.outputs.version }}
+        name: HoYoLAB ${{ steps.version.outputs.version }}
+        body: Automated release of HoYoLAB version ${{ steps.version.outputs.version }}.
+        files: hoyolab.xapk

@@ -127,6 +127,7 @@ def main() -> None:
     version, size_mb = get_latest_version_and_size()
     print(f"[i] 最新版本: {version}  |  大小: {size_mb:.1f} MB")
 
+    Path("latest").write_text(version, encoding="utf-8")
     cache = load_cache()
     if version in cache:
         print("[✓] 该版本已记录在 cache.json，无需下载。程序结束。")
