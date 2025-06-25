@@ -5,6 +5,9 @@ on:
     - cron: '0 3 * * *'
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   update-and-release:
     runs-on: ubuntu-latest
@@ -48,5 +51,3 @@ jobs:
           name: HoYoLAB ${{ steps.version.outputs.version }}
           body: Automated release of HoYoLAB version ${{ steps.version.outputs.version }}.
           files: hoyolab.xapk
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
