@@ -47,7 +47,15 @@ def get_latest_version_and_size() -> tuple[str, float]:
     """
     scraper = cloudscraper.create_scraper()
     response = scraper.get(PAGE_URL, headers=HEADERS, cookies=COOKIES, timeout=30)
-    response.raise_for_status()
+
+    if response.status_code > 400:
+        if response.status_code == 403:
+            full_content = response.text
+            if "cloudflare" in full_content:
+                raise RuntimeError(
+                    "访问被 Cloudflare 拦截"
+                )
+        raise RuntimeError(f"请求失败，状态码: {response.status_code}")
 
     soup = BeautifulSoup(response.text, "html.parser")
 
