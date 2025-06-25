@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-
+import time
 import cloudscraper
 from bs4 import BeautifulSoup
 
@@ -34,6 +34,7 @@ HEADERS = {
     "Pragma": "no-cache",
     "DNT": "1",
 }
+DOWNLOAD_PROGRESS_REFRESH_RANGE_SECOND = 1
 
 COOKIES: dict[str, str] = {
     # "cf_clearance": "your_cf_clearance_cookie",
@@ -100,13 +101,12 @@ def download_apk(version: str, size_mb: float) -> None:
     """
     流式方式下载 XAPK
     """
-    output_file = Path(f"hoyolab.xapk")
+    output_file = Path("hoyolab.xapk")
     if output_file.exists():
         print(f"[!] 文件 {output_file} 已存在，跳过下载。")
         return
 
-    with open("./latest", "w+", encoding="utf-8") as f:
-        f.write(version)
+    Path("latest").write_text(version, encoding="utf-8")
 
     scraper = cloudscraper.create_scraper()
     with scraper.get(DOWNLOAD_URL, headers=HEADERS, cookies=COOKIES, stream=True) as r:
@@ -116,11 +116,17 @@ def download_apk(version: str, size_mb: float) -> None:
         downloaded = 0
 
         print(f"[+] 开始下载 {output_file}  (≈ {size_mb:.1f} MB)")
+        last_print = 0.0
+
         with output_file.open("wb") as f:
             for chunk in r.iter_content(chunk_size=chunk_size):
-                if chunk:
-                    f.write(chunk)
-                    downloaded += len(chunk)
+                if not chunk:
+                    continue
+                f.write(chunk)
+                downloaded += len(chunk)
+
+                now = time.time()
+                if now - last_print >= DOWNLOAD_PROGRESS_REFRESH_RANGE_SECOND or downloaded >= total:
                     percent = downloaded * 100 / total
                     print(
                         f"\r    已下载: {downloaded / 1024 / 1024:.2f} MB "
@@ -128,7 +134,10 @@ def download_apk(version: str, size_mb: float) -> None:
                         end="",
                         flush=True,
                     )
-    print("\n[√] 下载完成")
+                    last_print = now
+
+        print()
+        print("[√] 下载完成")
 
 
 def main() -> None:
