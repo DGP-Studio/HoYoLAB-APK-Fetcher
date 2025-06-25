@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   update-and-release:
-    runs-on: [self-hosted, rocky8]
+    runs-on: [self-hosted, ephemeral]
 
     steps:
     - uses: actions/checkout@v4
