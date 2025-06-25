@@ -57,7 +57,8 @@ jobs:
 
     - name: Check release existence
       id: releasechecker
-      env: { GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} }
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       run: |
         version="${{ steps.version.outputs.version }}"
         echo "检查是否已经发布 tag=$version 的 Release..."
