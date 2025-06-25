@@ -10,7 +10,7 @@ permissions:
 
 jobs:
   update-and-release:
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, rocky8]
 
     steps:
     - uses: actions/checkout@v4
